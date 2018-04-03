@@ -34,6 +34,15 @@ RUN set -x; \
         && apt-get -y install -f --no-install-recommends \
         && rm -rf /var/lib/apt/lists/* odoo.deb
 
+# Special case to get latest Less
+RUN ln -s /usr/bin/nodejs /usr/local/bin/node \
+    && npm install -g less \
+    && rm -Rf ~/.npm /tmp/*
+
+# Special case to get bootstrap-sass, required by Odoo for Sass assets
+RUN gem install --no-rdoc --no-ri --no-update-sources bootstrap-sass --version '<4' \
+    && rm -Rf ~/.gem /var/lib/gems/*/cache/
+
 # Copy entrypoint script and Odoo configuration file
 RUN pip3 install num2words xlwt
 COPY ./entrypoint.sh /
