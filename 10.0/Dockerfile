@@ -1,7 +1,5 @@
 FROM debian:jessie
-
-# Enable Odoo user and filestore
-RUN useradd -md /home/odoo -s /bin/false odoo 
+MAINTAINER Odoo S.A. <info@odoo.com>
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
@@ -19,38 +17,14 @@ RUN set -x; \
         && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
         && dpkg --force-depends -i wkhtmltox.deb \
         && apt-get -y install -f --no-install-recommends \
-        && curl -sL https://deb.nodesource.com/setup_6.x | bash - \
-        && apt-get install -yqq nodejs \
         && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
         && rm -rf /var/lib/apt/lists/* wkhtmltox.deb \
-        && apt-get -yqq autoremove \
         && pip install psycogreen==1.0
-
-# Special case to get latest Less
-RUN ln -s /usr/bin/nodejs /usr/local/bin/node \
-    && npm install -g less \
-    && rm -Rf ~/.npm /tmp/*
-
-# Special case to get bootstrap-sass, required by Odoo for Sass assets
-# RUN gem install --no-rdoc --no-ri --no-update-sources bootstrap-sass --version '<4' \
-#    && rm -Rf ~/.gem /var/lib/gems/*/cache/
-
-# Install Odoo
-# ENV ODOO_VERSION 10.0
-# ENV ODOO_RELEASE 20180122
-# RUN set -x; \
-#         curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
-#         && echo '836f0fb94aee0d3771cf2188309f6079ee35f83e odoo.deb' | sha1sum -c - \
-#         && dpkg --force-depends -i odoo.deb \
-#         && apt-get update \
-#         && apt-get -y install -f --no-install-recommends \
-#         && rm -rf /var/lib/apt/lists/* odoo.deb
 
 # Install Odoo
 ENV ODOO_VERSION 11.0
 ENV ODOO_RELEASE 20180122
 RUN set -x; \
-        #http://nightly.odoo.com/11.0/nightly/deb/odoo_11.0.20180122_all.deb
         curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo '56f61789bc655aaa2c014a3c5f63d80805408359 odoo.deb' | sha1sum -c - \
         && dpkg --force-depends -i odoo.deb \
@@ -58,15 +32,8 @@ RUN set -x; \
         && apt-get -y install -f --no-install-recommends \
         && rm -rf /var/lib/apt/lists/* odoo.deb
 
-#RUN wget -O - https://nightly.odoo.com/odoo.key | apt-key add - \
-#    echo "deb http://nightly.odoo.com/11.0/nightly/deb/ ./" >> /etc/apt/sources.list \
-#    apt-get update && apt-get install odoo
-        
-
 # Copy entrypoint script and Odoo configuration file
-RUN pip install num2words xlwt
 COPY ./entrypoint.sh /
-RUN chmod 755 /entrypoint.sh
 COPY ./odoo.conf /etc/odoo/
 RUN chown odoo /etc/odoo/odoo.conf
 
