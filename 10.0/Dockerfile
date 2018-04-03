@@ -1,10 +1,7 @@
 FROM debian:jessie
 
 # Enable Odoo user and filestore
-RUN useradd -md /home/odoo -s /bin/false odoo \
-    && mkdir -p /var/lib/odoo \
-    && chown -R odoo:odoo /var/lib/odoo \
-    && sync
+RUN useradd -md /home/odoo -s /bin/false odoo 
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
