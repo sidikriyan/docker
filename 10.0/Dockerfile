@@ -1,29 +1,45 @@
-FROM debian:jessie
-MAINTAINER Odoo S.A. <info@odoo.com>
+FROM debian:stretch
 
-# Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN set -x; \
-        apt-get update \
-        && apt-get install -y --no-install-recommends \
-            ca-certificates \
-            curl \
-            node-less \
-            python-gevent \
-            python-pip \
-            python-renderpm \
-            python-support \
-            python-watchdog \
-        && curl -o wkhtmltox.deb -SL http://nightly.odoo.com/extra/wkhtmltox-0.12.1.2_linux-jessie-amd64.deb \
-        && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
-        && dpkg --force-depends -i wkhtmltox.deb \
-        && apt-get -y install -f --no-install-recommends \
-        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
-        && rm -rf /var/lib/apt/lists/* wkhtmltox.deb \
-        && pip install psycogreen==1.0
-
-# Install Odoo
+ARG ODOO_SOURCE=OCA/OCB
+ARG WKHTMLTOPDF_VERSION=0.12.4
+ARG WKHTMLTOPDF_CHECKSUM='049b2cdec9a8254f0ef8ac273afaf54f7e25459a273e27189591edc7d7cf29db'
 ENV ODOO_VERSION 11.0
 ENV ODOO_RELEASE 20180122
+
+# Enable Odoo user and filestore
+RUN useradd -md /home/odoo -s /bin/false odoo \
+    && mkdir -p /var/lib/odoo \
+    && chown -R odoo:odoo /var/lib/odoo \
+    && sync
+
+# Other requirements and recommendations to run Odoo
+# See https://github.com/$ODOO_SOURCE/blob/$ODOO_VERSION/debian/control
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && apt-get install -y --no-install-recommends \
+        python ruby-compass \
+        fontconfig libfreetype6 libxml2 libxslt1.1 libjpeg62-turbo zlib1g \
+        libfreetype6 liblcms2-2 libopenjpeg5 libtiff5 tk tcl libpq5 \
+        libldap-2.4-2 libsasl2-2 libx11-6 libxext6 libxrender1 \
+        locales-all zlibc \
+        bzip2 ca-certificates curl gettext-base git nano npm \
+        openssh-client telnet xz-utils \
+    && curl https://bootstrap.pypa.io/get-pip.py | python /dev/stdin --no-cache-dir \
+    && rm -Rf /var/lib/apt/lists/*
+
+# Special case for wkhtmltox
+RUN curl -SLo wkhtmltox.tar.xz https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox-${WKHTMLTOPDF_VERSION}_linux-generic-amd64.tar.xz \
+    && echo "${WKHTMLTOPDF_CHECKSUM}  wkhtmltox.tar.xz" | sha256sum -c - \
+    && tar --strip-components 1 -C /usr/local/ -xf wkhtmltox.tar.xz \
+    && rm wkhtmltox.tar.xz \
+    && wkhtmltopdf --version
+
+# Special case to get latest Less
+RUN npm install -g less \
+    && rm -Rf ~/.npm /tmp/*
+
+# Install Odoo
+
 RUN set -x; \
         curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo '56f61789bc655aaa2c014a3c5f63d80805408359 odoo.deb' | sha1sum -c - \
