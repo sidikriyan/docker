@@ -1,5 +1,4 @@
 FROM debian:jessie
-MAINTAINER Odoo S.A. <info@odoo.com>
 
 # Enable Odoo user and filestore
 RUN useradd -md /home/odoo -s /bin/false odoo \
@@ -54,16 +53,23 @@ RUN ln -s /usr/bin/nodejs /usr/local/bin/node \
 ENV ODOO_VERSION 11.0
 ENV ODOO_RELEASE 20180122
 RUN set -x; \
+        #http://nightly.odoo.com/11.0/nightly/deb/odoo_11.0.20180122_all.deb
         curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo '56f61789bc655aaa2c014a3c5f63d80805408359 odoo.deb' | sha1sum -c - \
         && dpkg --force-depends -i odoo.deb \
         && apt-get update \
         && apt-get -y install -f --no-install-recommends \
         && rm -rf /var/lib/apt/lists/* odoo.deb
+
+#RUN wget -O - https://nightly.odoo.com/odoo.key | apt-key add - \
+#    echo "deb http://nightly.odoo.com/11.0/nightly/deb/ ./" >> /etc/apt/sources.list \
+#    apt-get update && apt-get install odoo
         
 
 # Copy entrypoint script and Odoo configuration file
+RUN pip install num2words xlwt
 COPY ./entrypoint.sh /
+RUN chmod 755 /entrypoint.sh
 COPY ./odoo.conf /etc/odoo/
 RUN chown odoo /etc/odoo/odoo.conf
 
@@ -81,5 +87,5 @@ ENV ODOO_RC /etc/odoo/odoo.conf
 # Set default user when running the container
 USER odoo
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["odoo"]
