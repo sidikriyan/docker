@@ -1,6 +1,12 @@
 FROM debian:jessie
 MAINTAINER Odoo S.A. <info@odoo.com>
 
+# Enable Odoo user and filestore
+RUN useradd -md /home/odoo -s /bin/false odoo \
+    && mkdir -p /var/lib/odoo \
+    && chown -R odoo:odoo /var/lib/odoo \
+    && sync
+
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
         apt-get update \
